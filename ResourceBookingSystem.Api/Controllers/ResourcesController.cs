@@ -7,7 +7,6 @@ namespace ResourceBookingSystem.API.Controllers
 {
     [Route("api/resources")]
     [ApiController]
-    [Authorize(Roles = "Student,Admin,SuperAdmin")]
     public class ResourcesController(
         IResourceService resourceService,
         IResourceCategoryService resourceCategoryService) : ControllerBase
@@ -21,9 +20,21 @@ namespace ResourceBookingSystem.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetResources()
+        public async Task<IActionResult> GetResources(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 12,
+            [FromQuery] string search = "",
+            [FromQuery] string categoryId = "")
         {
-            var resources = await resourceService.GetAllAsync(CanManageResources());
+            if (pageNumber < 1 || pageSize < 1 || pageSize > 100)
+            {
+                return Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "Invalid pagination",
+                    detail: "Page number must be at least 1 and page size must be between 1 and 100.");
+            }
+
+            var resources = await resourceService.GetAllAsync(pageNumber, pageSize, search, categoryId, CanManageResources());
 
             return Ok(resources);
         }

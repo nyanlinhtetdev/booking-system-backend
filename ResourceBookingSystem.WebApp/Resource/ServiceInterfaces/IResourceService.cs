@@ -1,10 +1,16 @@
 using ResourceBookingSystem.WebApp.Resource.DTOs;
+using ResourceBookingSystem.WebApp.Shared.DTOs;
 
 namespace ResourceBookingSystem.WebApp.Resource.ServiceInterfaces;
 
 public interface IResourceService
 {
-    Task<IReadOnlyList<ResourceResponseDto>> GetAllAsync(bool includeInactive);
+    Task<PaginatedResponse<ResourceResponseDto>> GetAllAsync(
+        int pageNumber,
+        int pageSize,
+        string search,
+        string categoryId,
+        bool includeInactive);
 
     Task<ResourceResponseDto?> GetByIdAsync(
         Guid resourceId,

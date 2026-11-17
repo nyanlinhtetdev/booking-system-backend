@@ -92,10 +92,7 @@ namespace ResourceBookingSystem.API.Controllers
                     title: "Invalid refresh token",
                     detail: "Invalid refresh token");
             }
-            return Ok(new
-            {
-                message = "Successfully logout"
-            }); 
+            return Ok();
         }
 
         private void AddRefreshTokenCookie(LoginServiceResponseDto result)

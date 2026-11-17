@@ -2,13 +2,18 @@
 using ResourceBookingSystem.Database.AppDbContextModels;
 using ResourceBookingSystem.WebApp.Resource.DTOs;
 using ResourceBookingSystem.WebApp.Resource.ServiceInterfaces;
+using ResourceBookingSystem.WebApp.Shared.DTOs;
 using ResourceEntity = ResourceBookingSystem.Database.AppDbContextModels.Resource;
 
 namespace ResourceBookingSystem.WebApp.Resource.Services;
 
 public sealed class ResourceService(AppDbContext dbContext) : IResourceService
 {
-    public async Task<IReadOnlyList<ResourceResponseDto>> GetAllAsync(
+    public async Task<PaginatedResponse<ResourceResponseDto>> GetAllAsync(
+        int pageNumber,
+        int pageSize,
+        string search, 
+        string categoryId,
         bool includeInactive)
     {
         var query = dbContext.Resources
@@ -21,11 +26,33 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
             query = query.Where(resource => resource.Status == "Active");
         }
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(resource => resource.Name.ToLower().Contains(search.ToLower()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(categoryId))
+        {
+            query = query.Where(resource => resource.ResourceCategoryId == Guid.Parse(categoryId));
+        }
+
+        var totalRecords = await query.CountAsync();
+
         var resources = await query
             .OrderBy(resource => resource.Name)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return resources.Select(ToResponse).ToList();
+        return new PaginatedResponse<ResourceResponseDto>
+        {
+            Items = resources.Select(ToResponse).ToList(),
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalRecords = totalRecords,
+            TotalPages = (int)Math.Ceiling(
+                    (double)totalRecords / pageSize)
+        };
     }
 
     public async Task<ResourceResponseDto?> GetByIdAsync(
