@@ -16,6 +16,11 @@ public interface IResourceService
         Guid resourceId,
         bool includeInactive);
 
+    Task<ResourceAvailabilityResponseDto?> GetAvailabilityAsync(
+        Guid resourceId,
+        Guid currentUserId,
+        DateTime date);
+
     Task<ResourceResponseDto?> CreateAsync(ResourceRequestDto request);
 
     Task<bool> CategoryExistsAsync(Guid categoryId);

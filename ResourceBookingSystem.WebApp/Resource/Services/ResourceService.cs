@@ -74,6 +74,54 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
         return resource is null ? null : ToResponse(resource);
     }
 
+
+    public async Task<ResourceAvailabilityResponseDto?> GetAvailabilityAsync(
+        Guid resourceId,
+        Guid currentUserId,
+        DateTime date)
+    {
+        var resourceExists = await dbContext.Resources
+            .AnyAsync(resource =>
+                resource.ResourceId == resourceId &&
+                resource.Status == "Active");
+
+        if (!resourceExists)
+        {
+            return null;
+        }
+
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Kuala_Lumpur");
+
+        var localWeekStart = DateTime.SpecifyKind(date.Date, DateTimeKind.Unspecified);
+        var utcWeekStart = TimeZoneInfo.ConvertTimeToUtc(localWeekStart, timeZone);
+        var utcWeekEnd = utcWeekStart.AddDays(7);
+
+        var bookings = await dbContext.Bookings
+            .AsNoTracking()
+            .Where(booking =>
+                booking.ResourceId == resourceId &&
+                booking.Status != "Cancelled" &&
+                booking.StartDatetime < utcWeekEnd &&
+                booking.EndDatetime > utcWeekStart)
+            .OrderBy(booking => booking.StartDatetime)
+            .Select(booking => new BookedSlotDto
+            {
+                BookingId = booking.BookingId,
+                StartDatetime = booking.StartDatetime,
+                EndDatetime = booking.EndDatetime,
+                IsOwnedByCurrentUser = booking.UserId == currentUserId
+            })
+            .ToListAsync();
+
+        return new ResourceAvailabilityResponseDto
+        {
+            ResourceId = resourceId,
+            WeekStartDate = utcWeekStart,
+            WeekEndDate = utcWeekEnd.AddDays(-1),
+            Bookings = bookings
+        };
+    }
+
     public async Task<ResourceResponseDto?> CreateAsync(
         ResourceRequestDto request)
     {
