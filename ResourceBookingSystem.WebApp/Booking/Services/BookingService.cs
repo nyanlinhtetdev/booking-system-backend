@@ -22,6 +22,9 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 return new(BookingStatus.InvalidTimeRange);
             }
 
+            var startDatetimeUtc = ConvertToUtc(request.StartDatetime, request.Timezone);
+            var endDatetimeUtc = ConvertToUtc(request.EndDatetime, request.Timezone);
+
             if (!await ResourceIsAvailable(request.ResourceId))
             {
                 return new(BookingStatus.ResourceUnavailable);
@@ -29,8 +32,8 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
 
             if (await BookingExistsAsync(
                     request.ResourceId,
-                    request.StartDatetime,
-                    request.EndDatetime))
+                    startDatetimeUtc,
+                    endDatetimeUtc))
             {
                 return new(BookingStatus.SlotAlreadyBooked);
             }
@@ -40,8 +43,8 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 UserId = userId,
                 ResourceId = request.ResourceId,
                 Status = "Confirmed",
-                StartDatetime = request.StartDatetime,
-                EndDatetime = request.EndDatetime
+                StartDatetime = startDatetimeUtc,
+                EndDatetime = endDatetimeUtc
             };
 
             await dbContext.Bookings.AddAsync(newBooking);
@@ -60,7 +63,9 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             var booking = await dbContext.Bookings
                 .FirstOrDefaultAsync(existingBooking =>
                     existingBooking.BookingId == bookingId &&
-                    existingBooking.UserId == userId);
+                    existingBooking.UserId == userId &&
+                    existingBooking.Status != "Cancelled" &&
+                    existingBooking.StartDatetime > DateTime.UtcNow);
 
             if (booking is null)
             {
@@ -74,6 +79,9 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 return new(BookingStatus.InvalidTimeRange);
             }
 
+            var startDatetimeUtc = ConvertToUtc(request.StartDatetime, request.Timezone);
+            var endDatetimeUtc = ConvertToUtc(request.EndDatetime, request.Timezone);
+
             if (!await ResourceIsAvailable(booking.ResourceId))
             {
                 return new(BookingStatus.ResourceUnavailable);
@@ -81,8 +89,8 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
 
             if (await BookingExistsAsync(
                     booking.ResourceId,
-                    request.StartDatetime,
-                    request.EndDatetime,
+                    startDatetimeUtc,
+                    endDatetimeUtc,
                     booking.BookingId))
             {
                 return new(BookingStatus.SlotAlreadyBooked);
@@ -120,12 +128,29 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             await dbContext.SaveChangesAsync();
             return true;
         }
+        private static readonly TimeSpan MaxAdvanceBookingWindow = TimeSpan.FromDays(90);
 
         private static bool BookingDatetimeIsAvailable(
             DateTime startDatetime, 
             DateTime endDatetime)
         {
+            var now = DateTime.UtcNow;
+            if (startDatetime < now)
+            {
+                return false;
+            }
+
+            if (startDatetime > now.Add(MaxAdvanceBookingWindow))
+            {
+                return false;
+            }
+
             if (startDatetime >= endDatetime)
+            {
+                return false;
+            }
+
+            if (startDatetime.Date != endDatetime.Date)
             {
                 return false;
             }
@@ -133,6 +158,11 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             var duration = endDatetime - startDatetime;
 
             if (duration != TimeSpan.FromHours(1))
+            {
+                return false;
+            }
+
+            if (startDatetime.Hour < 9 || endDatetime.Hour > 18)
             {
                 return false;
             }
@@ -341,6 +371,24 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             return booking is null
                 ? null
                 : RespondBookingData(booking);
+        }
+
+        private DateTime ConvertToUtc(
+            DateTime localDateTime,
+            string timeZoneId)
+        {
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(
+                timeZoneId
+            );
+            localDateTime = DateTime.SpecifyKind(
+                localDateTime,
+                DateTimeKind.Unspecified
+            );
+
+            return TimeZoneInfo.ConvertTimeToUtc(
+                localDateTime,
+                timeZone
+            );
         }
     }
 }

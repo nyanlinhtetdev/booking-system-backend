@@ -12,6 +12,8 @@ namespace ResourceBookingSystem.WebApp.Booking.DTOs
         public DateTime StartDatetime { get; set; }
 
         public DateTime EndDatetime { get; set; }
+
+        public string Timezone { get; set; } = null!;
     }
 
     public class BookingUpdateRequestDto
@@ -19,6 +21,8 @@ namespace ResourceBookingSystem.WebApp.Booking.DTOs
         public DateTime StartDatetime { get; set; }
 
         public DateTime EndDatetime { get; set; }
+
+        public string Timezone { get; set; } = null!;
     }
 
     public class BookingResponseDto

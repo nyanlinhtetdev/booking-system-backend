@@ -23,7 +23,7 @@ public class BookingsController(IBookingService bookingService)
         {
             return Unauthorized();
         }
-
+ 
         var result = await bookingService.CreateBookingAsync(
             currentUserId,
             request);
@@ -219,4 +219,5 @@ public class BookingsController(IBookingService bookingService)
             $"/api/bookings/{result.Booking.BookingId}",
             result.Booking);
     }
+
 }
