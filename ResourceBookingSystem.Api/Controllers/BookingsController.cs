@@ -67,52 +67,56 @@ public class BookingsController(IBookingService bookingService)
     [HttpGet("my")]
     public async Task<IActionResult> GetMyBookings(
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery] int pageSize = 10,
+        [FromQuery] bool upcoming = true)
     {
         return await GetBookingListAsync(
             pageNumber,
             pageSize,
-            (userId, page, size) =>
+            upcoming,
+            (userId, page, size, upcoming) =>
                 bookingService.GetMyBookingsAsync(
                     userId,
                     page,
-                    size));
+                    size,
+                    upcoming));
     }
 
-    [HttpGet("my/upcoming")]
-    public async Task<IActionResult> GetUpcomingBookings(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10)
-    {
-        return await GetBookingListAsync(
-            pageNumber,
-            pageSize,
-            (userId, page, size) =>
-                bookingService.GetUpcomingBookingsAsync(
-                    userId,
-                    page,
-                    size));
-    }
+    //[HttpGet("my/upcoming")]
+    //public async Task<IActionResult> GetUpcomingBookings(
+    //    [FromQuery] int pageNumber = 1,
+    //    [FromQuery] int pageSize = 10)
+    //{
+    //    return await GetBookingListAsync(
+    //        pageNumber,
+    //        pageSize,
+    //        (userId, page, size) =>
+    //            bookingService.GetUpcomingBookingsAsync(
+    //                userId,
+    //                page,
+    //                size));
+    //}
 
-    [HttpGet("my/history")]
-    public async Task<IActionResult> GetBookingHistory(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10)
-    {
-        return await GetBookingListAsync(
-            pageNumber,
-            pageSize,
-            (userId, page, size) =>
-                bookingService.GetBookingHistoryAsync(
-                    userId,
-                    page,
-                    size));
-    }
+    //[HttpGet("my/history")]
+    //public async Task<IActionResult> GetBookingHistory(
+    //    [FromQuery] int pageNumber = 1,
+    //    [FromQuery] int pageSize = 10)
+    //{
+    //    return await GetBookingListAsync(
+    //        pageNumber,
+    //        pageSize,
+    //        (userId, page, size) =>
+    //            bookingService.GetBookingHistoryAsync(
+    //                userId,
+    //                page,
+    //                size));
+    //}
 
     private async Task<IActionResult> GetBookingListAsync(
         int pageNumber,
         int pageSize,
-        Func<Guid, int, int, Task<PaginatedResponse<BookingResponseDto>>> query)
+        bool upcoming,
+        Func<Guid, int, int, bool, Task<PaginatedResponse<BookingResponseDto>>> query)
     {
         if (!TryGetCurrentUserId(out var currentUserId))
         {
@@ -130,7 +134,8 @@ public class BookingsController(IBookingService bookingService)
         var result = await query(
             currentUserId,
             pageNumber,
-            pageSize);
+            pageSize,
+            upcoming);
 
         return Ok(result);
     }

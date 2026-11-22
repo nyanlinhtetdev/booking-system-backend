@@ -201,11 +201,13 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 BookingId = bookingEntity.BookingId,
                 UserId = bookingEntity.UserId,
                 ResourceId = bookingEntity.ResourceId,
+                ResourceName = bookingEntity.Resource.Name,
+                ResourceLocation = bookingEntity.Resource.Location,
                 Status = bookingEntity.Status,
                 CreatedDatetime = bookingEntity.CreatedDatetime,
                 ModifiedDatetime = bookingEntity.ModifiedDatetime,
                 StartDatetime = bookingEntity.StartDatetime,
-                EndDatetime = bookingEntity.EndDatetime
+                EndDatetime = bookingEntity.EndDatetime           
             };
         }
 
@@ -219,37 +221,14 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
         public Task<PaginatedResponse<BookingResponseDto>> GetMyBookingsAsync(
             Guid userId,
             int pageNumber,
-            int pageSize)
+            int pageSize,
+            bool upcoming)
         {
             return GetBookingsAsync(
                 userId,
                 pageNumber,
                 pageSize,
-                BookingPeriod.All);
-        }
-
-        public Task<PaginatedResponse<BookingResponseDto>> GetUpcomingBookingsAsync(
-            Guid userId,
-            int pageNumber,
-            int pageSize)
-        {
-            return GetBookingsAsync(
-                userId,
-                pageNumber,
-                pageSize,
-                BookingPeriod.Upcoming);
-        }
-
-        public Task<PaginatedResponse<BookingResponseDto>> GetBookingHistoryAsync(
-            Guid userId,
-            int pageNumber,
-            int pageSize)
-        {
-            return GetBookingsAsync(
-                userId,
-                pageNumber,
-                pageSize,
-                BookingPeriod.History);
+                upcoming == true? BookingPeriod.Upcoming : BookingPeriod.History);
         }
 
         public Task<PaginatedResponse<BookingResponseDto>> GetAllBookingsAsync(
@@ -288,10 +267,10 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             query = period switch
             {
                 BookingPeriod.Upcoming =>
-                    query.Where(booking => booking.EndDatetime > now),
+                    query.Where(booking => booking.StartDatetime > now),
 
                 BookingPeriod.History =>
-                    query.Where(booking => booking.EndDatetime <= now),
+                    query.Where(booking => booking.StartDatetime <= now),
 
                 _ => query
             };
@@ -299,25 +278,15 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             var totalRecords = await query.CountAsync();
 
             var bookings = await query
+                .Include(booking => booking.Resource)
                 .OrderByDescending(booking => booking.StartDatetime)
                 .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(booking => new BookingResponseDto
-                {
-                    BookingId = booking.BookingId,
-                    UserId = booking.UserId,
-                    ResourceId = booking.ResourceId,
-                    Status = booking.Status,
-                    CreatedDatetime = booking.CreatedDatetime,
-                    ModifiedDatetime = booking.ModifiedDatetime,
-                    StartDatetime = booking.StartDatetime,
-                    EndDatetime = booking.EndDatetime
-                })
+                .Take(pageSize)           
                 .ToListAsync();
 
             return new PaginatedResponse<BookingResponseDto>
             {
-                Items = bookings,
+                Items = bookings.Select(RespondBookingData).ToList(),
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalRecords = totalRecords,

@@ -40,6 +40,7 @@ namespace ResourceBookingSystem.API.Controllers
             return Ok(resources);
         }
 
+        [Authorize(Roles = "Student,Admin,SuperAdmin")]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetResource(Guid id)
         {
@@ -50,6 +51,7 @@ namespace ResourceBookingSystem.API.Controllers
             return resource is null ? NotFound() : Ok(resource);
         }
 
+        [Authorize(Roles = "Student,Admin,SuperAdmin")]
         [HttpGet("{id:guid}/availability")]
         public async Task<IActionResult> GetResourceAvailability(
             Guid id,

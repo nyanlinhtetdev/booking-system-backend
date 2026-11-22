@@ -8,17 +8,18 @@ public interface IBookingService
     Task<PaginatedResponse<BookingResponseDto>> GetMyBookingsAsync(
         Guid userId,
         int pageNumber,
-        int pageSize);
+        int pageSize,
+        bool upcoming);
 
-    Task<PaginatedResponse<BookingResponseDto>> GetUpcomingBookingsAsync(
-        Guid userId,
-        int pageNumber,
-        int pageSize);
+    //Task<PaginatedResponse<BookingResponseDto>> GetUpcomingBookingsAsync(
+    //    Guid userId,
+    //    int pageNumber,
+    //    int pageSize);
 
-    Task<PaginatedResponse<BookingResponseDto>> GetBookingHistoryAsync(
-        Guid userId,
-        int pageNumber,
-        int pageSize);
+    //Task<PaginatedResponse<BookingResponseDto>> GetBookingHistoryAsync(
+    //    Guid userId,
+    //    int pageNumber,
+    //    int pageSize);
 
     Task<BookingResponseDto?> GetByIdAsync(
         Guid bookingId,
