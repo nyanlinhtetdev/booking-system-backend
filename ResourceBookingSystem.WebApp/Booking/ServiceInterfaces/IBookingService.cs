@@ -11,16 +11,6 @@ public interface IBookingService
         int pageSize,
         bool upcoming);
 
-    //Task<PaginatedResponse<BookingResponseDto>> GetUpcomingBookingsAsync(
-    //    Guid userId,
-    //    int pageNumber,
-    //    int pageSize);
-
-    //Task<PaginatedResponse<BookingResponseDto>> GetBookingHistoryAsync(
-    //    Guid userId,
-    //    int pageNumber,
-    //    int pageSize);
-
     Task<BookingResponseDto?> GetByIdAsync(
         Guid bookingId,
         Guid userId);

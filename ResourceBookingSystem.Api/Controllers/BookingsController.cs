@@ -31,7 +31,7 @@ public class BookingsController(IBookingService bookingService)
         return HandleBookingResult(result, isCreate: true);
     }
 
-    [HttpPut("{bookingId:guid}")]
+    [HttpPatch("{bookingId:guid}")]
     public async Task<IActionResult> UpdateBooking(
         Guid bookingId,
         BookingUpdateRequestDto request)
@@ -82,36 +82,6 @@ public class BookingsController(IBookingService bookingService)
                     upcoming));
     }
 
-    //[HttpGet("my/upcoming")]
-    //public async Task<IActionResult> GetUpcomingBookings(
-    //    [FromQuery] int pageNumber = 1,
-    //    [FromQuery] int pageSize = 10)
-    //{
-    //    return await GetBookingListAsync(
-    //        pageNumber,
-    //        pageSize,
-    //        (userId, page, size) =>
-    //            bookingService.GetUpcomingBookingsAsync(
-    //                userId,
-    //                page,
-    //                size));
-    //}
-
-    //[HttpGet("my/history")]
-    //public async Task<IActionResult> GetBookingHistory(
-    //    [FromQuery] int pageNumber = 1,
-    //    [FromQuery] int pageSize = 10)
-    //{
-    //    return await GetBookingListAsync(
-    //        pageNumber,
-    //        pageSize,
-    //        (userId, page, size) =>
-    //            bookingService.GetBookingHistoryAsync(
-    //                userId,
-    //                page,
-    //                size));
-    //}
-
     private async Task<IActionResult> GetBookingListAsync(
         int pageNumber,
         int pageSize,
@@ -140,7 +110,6 @@ public class BookingsController(IBookingService bookingService)
         return Ok(result);
     }
 
-
     [HttpGet("{bookingId:guid}")]
     public async Task<IActionResult> GetBooking(Guid bookingId)
     {
@@ -157,7 +126,6 @@ public class BookingsController(IBookingService bookingService)
             ? NotFound()
             : Ok(booking);
     }
-
     private bool TryGetCurrentUserId(out Guid userId)
     {
         var userIdClaim = User.FindFirstValue(

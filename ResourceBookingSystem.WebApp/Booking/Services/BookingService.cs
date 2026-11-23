@@ -96,8 +96,8 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 return new(BookingStatus.SlotAlreadyBooked);
             }
 
-            booking.StartDatetime = request.StartDatetime;
-            booking.EndDatetime = request.EndDatetime;
+            booking.StartDatetime = startDatetimeUtc;
+            booking.EndDatetime = endDatetimeUtc;
             booking.ModifiedDatetime = DateTime.UtcNow;
 
             await dbContext.SaveChangesAsync();
@@ -201,8 +201,8 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 BookingId = bookingEntity.BookingId,
                 UserId = bookingEntity.UserId,
                 ResourceId = bookingEntity.ResourceId,
-                ResourceName = bookingEntity.Resource.Name,
-                ResourceLocation = bookingEntity.Resource.Location,
+                ResourceName = bookingEntity.Resource?.Name,
+                ResourceLocation = bookingEntity.Resource?.Location,
                 Status = bookingEntity.Status,
                 CreatedDatetime = bookingEntity.CreatedDatetime,
                 ModifiedDatetime = bookingEntity.ModifiedDatetime,
@@ -279,7 +279,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
 
             var bookings = await query
                 .Include(booking => booking.Resource)
-                .OrderByDescending(booking => booking.StartDatetime)
+                .OrderBy(booking => booking.StartDatetime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)           
                 .ToListAsync();
@@ -341,7 +341,6 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 ? null
                 : RespondBookingData(booking);
         }
-
         private DateTime ConvertToUtc(
             DateTime localDateTime,
             string timeZoneId)
