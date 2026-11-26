@@ -4,6 +4,7 @@ using ResourceBookingSystem.WebApp.Booking.DTOs;
 using ResourceBookingSystem.WebApp.Booking.Enums;
 using ResourceBookingSystem.WebApp.Booking.ServiceInterfaces;
 using ResourceBookingSystem.WebApp.Resource.DTOs;
+using ResourceBookingSystem.WebApp.Resource.Enums;
 using ResourceBookingSystem.WebApp.Shared.DTOs;
 using BookingEntity = ResourceBookingSystem.Database.AppDbContextModels.Booking;
 
@@ -19,7 +20,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                     request.StartDatetime,
                     request.EndDatetime))
             {
-                return new(BookingStatus.InvalidTimeRange);
+                return new(BookingResultStatus.InvalidTimeRange);
             }
 
             var startDatetimeUtc = ConvertToUtc(request.StartDatetime, request.Timezone);
@@ -27,7 +28,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
 
             if (!await ResourceIsAvailable(request.ResourceId))
             {
-                return new(BookingStatus.ResourceUnavailable);
+                return new(BookingResultStatus.ResourceUnavailable);
             }
 
             if (await BookingExistsAsync(
@@ -35,14 +36,14 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                     startDatetimeUtc,
                     endDatetimeUtc))
             {
-                return new(BookingStatus.SlotAlreadyBooked);
+                return new(BookingResultStatus.SlotAlreadyBooked);
             }
 
             var newBooking = new BookingEntity
             {
                 UserId = userId,
                 ResourceId = request.ResourceId,
-                Status = "Confirmed",
+                Status = BookingStatus.Confirmed.ToString(),
                 StartDatetime = startDatetimeUtc,
                 EndDatetime = endDatetimeUtc
             };
@@ -51,7 +52,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             await dbContext.SaveChangesAsync();
 
             return new(
-                BookingStatus.Success,
+                BookingResultStatus.Success,
                 RespondBookingData(newBooking));
         }
 
@@ -64,19 +65,19 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 .FirstOrDefaultAsync(existingBooking =>
                     existingBooking.BookingId == bookingId &&
                     existingBooking.UserId == userId &&
-                    existingBooking.Status != "Cancelled" &&
+                    existingBooking.Status != BookingStatus.Cancelled.ToString() &&
                     existingBooking.StartDatetime > DateTime.UtcNow);
 
             if (booking is null)
             {
-                return new(BookingStatus.BookingNotFound);
+                return new(BookingResultStatus.BookingNotFound);
             }
 
             if (!BookingDatetimeIsAvailable(
                     request.StartDatetime,
                     request.EndDatetime))
             {
-                return new(BookingStatus.InvalidTimeRange);
+                return new(BookingResultStatus.InvalidTimeRange);
             }
 
             var startDatetimeUtc = ConvertToUtc(request.StartDatetime, request.Timezone);
@@ -84,7 +85,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
 
             if (!await ResourceIsAvailable(booking.ResourceId))
             {
-                return new(BookingStatus.ResourceUnavailable);
+                return new(BookingResultStatus.ResourceUnavailable);
             }
 
             if (await BookingExistsAsync(
@@ -93,7 +94,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                     endDatetimeUtc,
                     booking.BookingId))
             {
-                return new(BookingStatus.SlotAlreadyBooked);
+                return new(BookingResultStatus.SlotAlreadyBooked);
             }
 
             booking.StartDatetime = startDatetimeUtc;
@@ -103,7 +104,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             await dbContext.SaveChangesAsync();
 
             return new(
-                BookingStatus.Success,
+                BookingResultStatus.Success,
                 RespondBookingData(booking));
         }
         
@@ -115,7 +116,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 .FirstOrDefaultAsync(booking =>
                     booking.BookingId == bookingId &&
                     booking.UserId == userId &&
-                    booking.Status != "Cancelled" &&
+                    booking.Status != BookingStatus.Cancelled.ToString() &&
                     booking.StartDatetime > DateTime.UtcNow); 
 
             if(booking is null)
@@ -123,7 +124,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 return false;
             }
 
-            booking.Status = "Cancelled";
+            booking.Status = BookingStatus.Cancelled.ToString();
             booking.ModifiedDatetime = DateTime.UtcNow;
             await dbContext.SaveChangesAsync();
             return true;
@@ -183,7 +184,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
         {
             return dbContext.Bookings.AnyAsync(booking =>
                 booking.ResourceId == resourceId &&
-                booking.Status != "Cancelled" &&
+                booking.Status != BookingStatus.Cancelled.ToString() &&
                 (excludedBookingId == null ||
                  booking.BookingId != excludedBookingId) &&
                 booking.StartDatetime < endDatetime &&
@@ -192,7 +193,9 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
 
         private Task<bool> ResourceIsAvailable(Guid resourceId)
         {
-            return dbContext.Resources.AnyAsync(resource => resource.ResourceId == resourceId && resource.Status == "Active");
+            return dbContext.Resources.AnyAsync(resource =>
+                resource.ResourceId == resourceId &&
+                resource.Status == ResourceStatus.Active.ToString());
         }
         private BookingResponseDto RespondBookingData(BookingEntity bookingEntity)
         {
@@ -261,7 +264,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
 
             if (!includeCancelled)
             {
-                query = query.Where(booking => booking.Status != "Cancelled");
+                query = query.Where(booking => booking.Status != BookingStatus.Cancelled.ToString());
             }
 
             query = period switch
@@ -312,14 +315,14 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             var booking = await dbContext.Bookings
                 .FirstOrDefaultAsync(item =>
                     item.BookingId == bookingId &&
-                    item.Status != "Cancelled");
+                    item.Status != BookingStatus.Cancelled.ToString());
 
             if (booking is null)
             {
                 return false;
             }
 
-            booking.Status = "Cancelled";
+            booking.Status = BookingStatus.Cancelled.ToString();
             booking.ModifiedDatetime = DateTime.UtcNow;
 
             await dbContext.SaveChangesAsync();

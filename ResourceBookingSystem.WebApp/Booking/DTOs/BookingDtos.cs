@@ -47,7 +47,7 @@ namespace ResourceBookingSystem.WebApp.Booking.DTOs
     }
 
     public sealed record BookingResult(
-        BookingStatus Status,
+        BookingResultStatus Status,
         BookingResponseDto? Booking = null);
 
 }

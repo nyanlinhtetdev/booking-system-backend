@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ResourceBookingSystem.Database.AppDbContextModels;
+using ResourceBookingSystem.WebApp.Booking.Enums;
 using ResourceBookingSystem.WebApp.Resource.DTOs;
+using ResourceBookingSystem.WebApp.Resource.Enums;
 using ResourceBookingSystem.WebApp.Resource.ServiceInterfaces;
 using ResourceBookingSystem.WebApp.Shared.DTOs;
 using ResourceEntity = ResourceBookingSystem.Database.AppDbContextModels.Resource;
@@ -23,7 +25,8 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
 
         if (!includeInactive)
         {
-            query = query.Where(resource => resource.Status == "Active");
+            query = query.Where(resource =>
+                resource.Status == ResourceStatus.Active.ToString());
         }
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -66,7 +69,8 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
 
         if (!includeInactive)
         {
-            query = query.Where(resource => resource.Status == "Active");
+            query = query.Where(resource =>
+                resource.Status == ResourceStatus.Active.ToString());
         }
 
         var resource = await query.FirstOrDefaultAsync();
@@ -83,7 +87,7 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
         var resourceExists = await dbContext.Resources
             .AnyAsync(resource =>
                 resource.ResourceId == resourceId &&
-                resource.Status == "Active");
+                resource.Status == ResourceStatus.Active.ToString());
 
         if (!resourceExists)
         {
@@ -100,7 +104,7 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
             .AsNoTracking()
             .Where(booking =>
                 booking.ResourceId == resourceId &&
-                booking.Status != "Cancelled" &&
+                booking.Status != BookingStatus.Cancelled.ToString() &&
                 booking.StartDatetime < utcWeekEnd &&
                 booking.EndDatetime > utcWeekStart)
             .OrderBy(booking => booking.StartDatetime)
@@ -136,7 +140,7 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
             Location = request.Location.Trim(),
             Capacity = request.Capacity,
             ResourceCategoryId = request.ResourceCategoryId,
-            Status = "Active"
+            Status = ResourceStatus.Active.ToString()
         };
 
         await dbContext.Resources.AddAsync(resource);
@@ -192,8 +196,10 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
     {
         var normalizedStatus = status.Trim();
 
-        if (!normalizedStatus.Equals("Active", StringComparison.OrdinalIgnoreCase) &&
-            !normalizedStatus.Equals("Inactive", StringComparison.OrdinalIgnoreCase))
+        if (!Enum.TryParse<ResourceStatus>(
+                normalizedStatus,
+                ignoreCase: true,
+                out var resourceStatus))
         {
             return null;
         }
@@ -207,11 +213,7 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
             return null;
         }
 
-        resource.Status = normalizedStatus.Equals(
-            "Active",
-            StringComparison.OrdinalIgnoreCase)
-            ? "Active"
-            : "Inactive";
+        resource.Status = resourceStatus.ToString();
 
         await dbContext.SaveChangesAsync();
 

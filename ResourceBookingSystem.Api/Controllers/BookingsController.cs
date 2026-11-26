@@ -140,28 +140,28 @@ public class BookingsController(IBookingService bookingService)
     {
         return result.Status switch
         {
-            BookingStatus.Success =>
+            BookingResultStatus.Success =>
                 CreateSuccessResponse(result, isCreate),
 
-            BookingStatus.InvalidTimeRange =>
+            BookingResultStatus.InvalidTimeRange =>
                 Problem(
                     statusCode: StatusCodes.Status400BadRequest,
                     title: "Invalid booking time",
                     detail: "The booking must be exactly one hour and use full-hour boundaries."),
 
-            BookingStatus.ResourceUnavailable =>
+            BookingResultStatus.ResourceUnavailable =>
                 Problem(
                     statusCode: StatusCodes.Status404NotFound,
                     title: "Resource unavailable",
                     detail: "The requested resource does not exist or is inactive."),
 
-            BookingStatus.SlotAlreadyBooked =>
+            BookingResultStatus.SlotAlreadyBooked =>
                 Problem(
                     statusCode: StatusCodes.Status409Conflict,
                     title: "Time slot unavailable",
                     detail: "The selected time slot has already been booked."),
 
-            BookingStatus.BookingNotFound =>
+            BookingResultStatus.BookingNotFound =>
                 Problem(
                     statusCode: StatusCodes.Status404NotFound,
                     title: "Booking not found",
