@@ -54,7 +54,7 @@ namespace ResourceBookingSystem.WebApp.Auth.Services
         public async Task<LoginServiceResponseDto?> Login(LoginRequestDto request)
         {
             var user = await dbContext.Users.FirstOrDefaultAsync(dbUser => dbUser.Email == request.Email);
-            if (user is null)
+            if (user is null || !user.IsActive)
             {
                 return null;
             }     
@@ -160,7 +160,12 @@ namespace ResourceBookingSystem.WebApp.Auth.Services
             }
 
             var user = storedToken.User ?? await dbContext.Users.FindAsync(storedToken.UserId);
-            if (user == null) return null;
+            if (user == null || !user.IsActive)
+            {
+                storedToken.RevokedDatetime = DateTime.UtcNow;
+                await dbContext.SaveChangesAsync();
+                return null;
+            }
 
             storedToken.RevokedDatetime = DateTime.UtcNow;
 

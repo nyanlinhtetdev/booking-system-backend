@@ -25,4 +25,5 @@ public enum ResourceCategoryMutationStatus
 
 public sealed record ResourceCategoryResult(
     ResourceCategoryMutationStatus Status,
-    ResourceCategoryResponseDto? Category = null);
+    ResourceCategoryResponseDto? Category = null,
+    ResourceCategoryResponseDto? OldCategory = null);

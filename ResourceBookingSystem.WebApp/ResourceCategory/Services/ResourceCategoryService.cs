@@ -65,12 +65,16 @@ public sealed class ResourceCategoryService(AppDbContext dbContext)
             return new(ResourceCategoryMutationStatus.NameAlreadyExists);
         }
 
+        var oldCategory = ToResponse(category);
         category.Name = name;
         await dbContext.SaveChangesAsync();
 
+        var newCategory = ToResponse(category);
+
         return new(
             ResourceCategoryMutationStatus.Success,
-            ToResponse(category));
+            newCategory,
+            oldCategory);
     }
 
     public async Task<ResourceCategoryResult> DeleteAsync(Guid categoryId)

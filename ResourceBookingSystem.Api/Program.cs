@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using ResourceBookingSystem.Database.AppDbContextModels;
 using ResourceBookingSystem.WebApp.Auth.Services;
 using ResourceBookingSystem.WebApp.Auth.ServiceInterfaces;
+using ResourceBookingSystem.WebApp.AuditLog.Services;
+using ResourceBookingSystem.WebApp.AuditLog.ServiceInterfaces;
 using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -27,6 +29,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
 builder.Services.AddScoped<IBookingService, BookingService>();

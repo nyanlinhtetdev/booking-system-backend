@@ -25,7 +25,7 @@ public interface IResourceService
 
     Task<bool> CategoryExistsAsync(Guid categoryId);
 
-    Task<ResourceResponseDto?> UpdateAsync(
+    Task<ResourceMutationResult?> UpdateAsync(
         Guid resourceId,
         ResourceRequestDto request);
 

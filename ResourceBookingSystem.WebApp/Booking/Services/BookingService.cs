@@ -245,7 +245,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
                 BookingPeriod.All,
                 includeCancelled: true);
         }
-
+        
         private async Task<PaginatedResponse<BookingResponseDto>> GetBookingsAsync(
             Guid? userId,
             int pageNumber,

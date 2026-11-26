@@ -159,11 +159,12 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
             .AnyAsync(category => category.ResourceCategoryId == categoryId);
     }
 
-    public async Task<ResourceResponseDto?> UpdateAsync(
+    public async Task<ResourceMutationResult?> UpdateAsync(
         Guid resourceId,
         ResourceRequestDto request)
     {
         var resource = await dbContext.Resources
+            .Include(item => item.ResourceCategory)
             .FirstOrDefaultAsync(item => item.ResourceId == resourceId);
 
         if (resource is null)
@@ -176,6 +177,8 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
             return null;
         }
 
+        var oldValue = ToResponse(resource);
+
         resource.Name = request.Name.Trim();
         resource.Location = request.Location.Trim();
         resource.Capacity = request.Capacity;
@@ -187,7 +190,9 @@ public sealed class ResourceService(AppDbContext dbContext) : IResourceService
             .Reference(item => item.ResourceCategory)
             .LoadAsync();
 
-        return ToResponse(resource);
+        var newValue = ToResponse(resource);
+
+        return new ResourceMutationResult(oldValue, newValue);
     }
 
     public async Task<ResourceResponseDto?> UpdateStatusAsync(
