@@ -15,6 +15,8 @@ public partial class AppDbContext : DbContext
     {
     }
 
+    public virtual DbSet<AuditLog> AuditLogs { get; set; }
+
     public virtual DbSet<Booking> Bookings { get; set; }
 
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -27,6 +29,52 @@ public partial class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.AuditLogId).HasName("audit_logs_pkey");
+
+            entity.ToTable("audit_logs");
+
+            entity.HasIndex(e => e.ActorUserId, "ix_audit_logs_actor_user_id");
+
+            entity.HasIndex(e => new { e.EntityType, e.EntityId }, "ix_audit_logs_entity");
+
+            entity.HasIndex(e => e.OccurredAtUtc, "ix_audit_logs_occurred_at_utc");
+
+            entity.Property(e => e.AuditLogId)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("audit_log_id");
+            entity.Property(e => e.Action)
+                .HasMaxLength(100)
+                .HasColumnName("action");
+            entity.Property(e => e.ActorUserId).HasColumnName("actor_user_id");
+            entity.Property(e => e.EntityId).HasColumnName("entity_id");
+            entity.Property(e => e.EntityType)
+                .HasMaxLength(100)
+                .HasColumnName("entity_type");
+            entity.Property(e => e.IpAddress)
+                .HasMaxLength(45)
+                .HasColumnName("ip_address");
+            entity.Property(e => e.NewValues)
+                .HasColumnType("jsonb")
+                .HasColumnName("new_values");
+            entity.Property(e => e.OccurredAtUtc)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("occurred_at_utc");
+            entity.Property(e => e.OldValues)
+                .HasColumnType("jsonb")
+                .HasColumnName("old_values");
+            entity.Property(e => e.RequestId)
+                .HasMaxLength(100)
+                .HasColumnName("request_id");
+            entity.Property(e => e.UserAgent).HasColumnName("user_agent");
+
+            entity.HasOne(d => d.ActorUser).WithMany(p => p.AuditLogs)
+                .HasForeignKey(d => d.ActorUserId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_audit_log_actor");
+        });
+
         modelBuilder.Entity<Booking>(entity =>
         {
             entity.HasKey(e => e.BookingId).HasName("bookings_pkey");
