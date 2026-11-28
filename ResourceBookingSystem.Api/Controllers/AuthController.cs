@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ResourceBookingSystem.WebApp.Auth.DTOs;
-using ResourceBookingSystem.WebApp.Auth.Services;
 using ResourceBookingSystem.WebApp.Auth.ServiceInterfaces;
-using Microsoft.AspNetCore.Authorization;
 
 namespace ResourceBookingSystem.API.Controllers
 {
@@ -15,12 +13,12 @@ namespace ResourceBookingSystem.API.Controllers
         public async Task<IActionResult> Register(RegisterRequestDto registerRequestDto)
         {
             var result = await authService.Register(registerRequestDto);
-            if(result is null)
+            if (result is null)
             {
                 return Problem(
                     statusCode: StatusCodes.Status409Conflict,
                     title: "Already Existed",
-                    detail: $"User with this email has already existed.");
+                    detail: "User with this email already exists.");
             }
             return Ok(result);
         }
@@ -37,9 +35,7 @@ namespace ResourceBookingSystem.API.Controllers
                     detail: "Invalid email or password");
             }
 
-            // Add refresh token to browser cookie
-
-            AddRefreshTokenCookie(result);
+            AddRefreshTokenCookie(result.RefreshToken);
 
             return Ok(new LoginResponseDto
             {
@@ -53,20 +49,19 @@ namespace ResourceBookingSystem.API.Controllers
         {
             var refreshToken = Request.Cookies["refreshToken"];
             if (string.IsNullOrEmpty(refreshToken))
-                return Ok();
+            {
+                DeleteRefreshTokenCookie();
+                return Unauthorized(); 
+            }
 
             var result = await authService.Refresh(refreshToken);
             if (result is null)
             {
-                return Problem(
-                    statusCode: StatusCodes.Status400BadRequest,
-                    title: "Invalid refresh token",
-                    detail: "Invalid refresh token");
+                DeleteRefreshTokenCookie(); 
+                return Unauthorized();   
             }
 
-            // Add the new refresh token to browser cookie
-
-            AddRefreshTokenCookie(result);
+            AddRefreshTokenCookie(result.RefreshToken);
 
             return Ok(new RefreshTokenResponseDto
             {
@@ -75,27 +70,21 @@ namespace ResourceBookingSystem.API.Controllers
             });
         }
 
-
-        [Authorize]
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             var refreshToken = Request.Cookies["refreshToken"];
-            if (string.IsNullOrEmpty(refreshToken))
-                return Ok();
-
-            var result = await authService.RevokeRefreshToken(refreshToken);
-            if (result is null)
+            if (!string.IsNullOrEmpty(refreshToken))
             {
-                return Problem(
-                    statusCode: StatusCodes.Status400BadRequest,
-                    title: "Invalid refresh token",
-                    detail: "Invalid refresh token");
+                await authService.RevokeRefreshToken(refreshToken);
             }
-            return Ok();
+
+            DeleteRefreshTokenCookie();
+
+            return NoContent();
         }
 
-        private void AddRefreshTokenCookie(LoginServiceResponseDto result)
+        private void AddRefreshTokenCookie(string refreshToken)
         {
             var cookieOptions = new CookieOptions
             {
@@ -106,7 +95,18 @@ namespace ResourceBookingSystem.API.Controllers
                 Path = "/"
             };
 
-            Response.Cookies.Append("refreshToken", result.RefreshToken, cookieOptions);
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+        }
+
+        private void DeleteRefreshTokenCookie()
+        {
+            Response.Cookies.Delete("refreshToken", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/"
+            });
         }
     }
 }
