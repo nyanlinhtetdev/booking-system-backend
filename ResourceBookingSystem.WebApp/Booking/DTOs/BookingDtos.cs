@@ -31,6 +31,8 @@ namespace ResourceBookingSystem.WebApp.Booking.DTOs
 
         public Guid UserId { get; set; }
 
+        public string? StudentId { get; set; }
+
         public Guid ResourceId { get; set; }
         public string? ResourceName { get; init; }
         public string? ResourceLocation { get; init; }

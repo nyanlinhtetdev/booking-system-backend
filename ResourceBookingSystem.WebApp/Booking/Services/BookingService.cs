@@ -203,6 +203,7 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             {
                 BookingId = bookingEntity.BookingId,
                 UserId = bookingEntity.UserId,
+                StudentId = bookingEntity.User?.StudentId,
                 ResourceId = bookingEntity.ResourceId,
                 ResourceName = bookingEntity.Resource?.Name,
                 ResourceLocation = bookingEntity.Resource?.Location,
@@ -270,19 +271,21 @@ namespace ResourceBookingSystem.WebApp.Booking.Services
             query = period switch
             {
                 BookingPeriod.Upcoming =>
-                    query.Where(booking => booking.StartDatetime > now),
+                    query.Where(booking => booking.StartDatetime > now)
+                         .OrderBy(booking => booking.StartDatetime),
 
                 BookingPeriod.History =>
-                    query.Where(booking => booking.StartDatetime <= now),
+                    query.Where(booking => booking.StartDatetime <= now)
+                         .OrderByDescending(booking => booking.StartDatetime),
 
-                _ => query
+                _ => query.OrderByDescending(booking => booking.CreatedDatetime)
             };
 
             var totalRecords = await query.CountAsync();
 
             var bookings = await query
                 .Include(booking => booking.Resource)
-                .OrderBy(booking => booking.StartDatetime)
+                .Include(booking => booking.User)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)           
                 .ToListAsync();

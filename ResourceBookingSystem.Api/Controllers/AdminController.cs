@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ResourceBookingSystem.WebApp.AuditLog.DTOs;
 using ResourceBookingSystem.WebApp.AuditLog.ServiceInterfaces;
-using ResourceBookingSystem.WebApp.Auth.DTOs;
 using ResourceBookingSystem.WebApp.UserDomain.DTOs;
 using ResourceBookingSystem.WebApp.UserDomain.ServiceInterfaces;
 using ResourceBookingSystem.WebApp.Resource.DTOs;
